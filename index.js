@@ -7,9 +7,19 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const LINK_CANAL = "https://whatsapp.com/channel/0029Vb8otv8BFLgTlSqipd1m";
 
-// Servidor web básico para que Render mantenga el servicio activo
+// Servidor web y ruta de estado
 app.get('/', (req, res) => {
   res.send('🤖 Bot de Tasas BCV Rinde+ está activo y operando en la nube.');
+});
+
+// NUEVA RUTA DE PRUEBA: Al entrar aquí desde el navegador, publica las tasas al instante
+app.get('/probar', async (req, res) => {
+  try {
+    await publicarTasasBCV();
+    res.send('✅ ¡Prueba ejecutada con éxito! Revisa tu canal de WhatsApp.');
+  } catch (error) {
+    res.status(500).send('❌ Error al ejecutar la prueba: ' + error.message);
+  }
 });
 
 app.listen(PORT, () => {
@@ -17,7 +27,7 @@ app.listen(PORT, () => {
 });
 
 async function publicarTasasBCV() {
-  console.log('\n[Automático] Iniciando proceso de consulta de tasas...');
+  console.log('\n[Prueba/Automático] Iniciando proceso de consulta de tasas...');
   try {
     const [resDolar, resEuro] = await Promise.all([
       fetch("https://ve.dolarapi.com/v1/dolares/oficial").catch(() => null),
@@ -66,7 +76,7 @@ async function publicarTasasBCV() {
           const channelJid = meta.id;
 
           await sock.sendMessage(channelJid, { text: mensaje });
-          console.log('[Automático] ¡Tasas publicadas con éxito en el canal de WhatsApp!');
+          console.log('[Prueba/Automático] ¡Tasas publicadas con éxito en el canal de WhatsApp!');
         } catch (err) {
           console.error('Error al enviar el mensaje al canal:', err);
         }
@@ -78,7 +88,8 @@ async function publicarTasasBCV() {
     });
 
   } catch (error) {
-    console.error('Error en el proceso automático:', error);
+    console.error('Error en el proceso:', error);
+    throw error;
   }
 }
 
