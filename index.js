@@ -25,7 +25,6 @@ app.listen(PORT, () => {
   console.log(`Servidor web corriendo en el puerto ${PORT}`);
 });
 
-// Función para cargar o inicializar el historial
 function obtenerHistorial() {
   if (fs.existsSync(HISTORIAL_FILE)) {
     try {
@@ -37,7 +36,6 @@ function obtenerHistorial() {
   return null;
 }
 
-// Función para guardar el historial del día
 function guardarHistorial(datos) {
   fs.writeFileSync(HISTORIAL_FILE, JSON.stringify(datos, null, 2));
 }
@@ -47,7 +45,7 @@ async function publicarTasasBCV() {
   
   const [resDolar, resEuro] = await Promise.all([
     fetch("https://ve.dolarapi.com/v1/dolares/oficial").catch(() => null),
-    fetch("https://ve.dolarapi.com/v1/euros/oficial").catch(() => null]
+    fetch("https://ve.dolarapi.com/v1/euros/oficial").catch(() => null) // <-- Corregido el paréntesis aquí
   ]);
 
   let dolarValor = 0;
@@ -71,7 +69,6 @@ async function publicarTasasBCV() {
     throw new Error("No se pudo obtener la tasa oficial del dólar.");
   }
 
-  // Cargar historial previo para comparaciones
   let historial = obtenerHistorial();
   let variacionBs = 0;
   let variacionPct = 0;
@@ -90,11 +87,9 @@ async function publicarTasasBCV() {
     textoEstadisticaDiaria = `📈 *Variación Diaria (USD):* Primer registro de referencia guardado.\n`;
   }
 
-  // Comprobaciones de fecha para reportes especiales
   const hoy = new Date();
-  const esViernes = hoy.getDay() === 5; // 0 = Domingo, 5 = Viernes
+  const esViernes = hoy.getDay() === 5;
   
-  // Saber si es el último día del mes
   const manana = new Date(hoy);
   manana.setDate(hoy.getDate() + 1);
   const esUltimoDiaMes = manana.getDate() === 1;
@@ -121,7 +116,6 @@ async function publicarTasasBCV() {
       `• Variación total del mes: ${signoMes}${varMensualBs.toFixed(2)} VES (${signoMes}${varMensualPct.toFixed(2)}%)\n`;
   }
 
-  // Guardar datos actualizados para el próximo cálculo
   let nuevoHistorial = {
     dolarValor: dolarValor,
     euroValor: euroValor,
@@ -131,7 +125,6 @@ async function publicarTasasBCV() {
   };
   guardarHistorial(nuevoHistorial);
 
-  // Armar mensaje final para WhatsApp
   const mensaje = 
     `📊 *Tasas Oficiales BCV* | *Rinde+*\n` +
     `🗓️ Fecha: ${fechaOficial}\n\n` +
@@ -141,7 +134,6 @@ async function publicarTasasBCV() {
     `${textoReporteEspecial}\n` +
     `_📈 Mantente al día con las finanzas descargando Rinde+._`;
 
-  // Conexión y envío con Baileys
   const { state, saveCreds } = await useMultiFileAuthState('auth_session');
   const sock = makeWASocket({
     auth: state,
