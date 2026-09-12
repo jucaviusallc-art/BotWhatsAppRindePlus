@@ -45,7 +45,7 @@ async function publicarTasasBCV() {
   
   const [resDolar, resEuro] = await Promise.all([
     fetch("https://ve.dolarapi.com/v1/dolares/oficial").catch(() => null),
-    fetch("https://ve.dolarapi.com/v1/euros/oficial").catch(() => null) // <-- Corregido el paréntesis aquí
+    fetch("https://ve.dolarapi.com/v1/euros/oficial").catch(() => null)
   ]);
 
   let dolarValor = 0;
@@ -82,9 +82,10 @@ async function publicarTasasBCV() {
     textoEstadisticaDiaria = 
       `📈 *Variación Diaria (USD):*\n` +
       `• Cambio: ${signo}${variacionBs.toFixed(2)} VES\n` +
-      `• Porcentaje: ${signo}${variacionPct.toFixed(2)}%\n`;
+      `• Porcentaje: ${signo}${variacionPct.toFixed(2)}%\n\n`;
   } else {
-    textoEstadisticaDiaria = `📈 *Variación Diaria (USD):* Primer registro de referencia guardado.\n`;
+    // Si no hay historial previo, se omite por completo el texto de variación
+    textoEstadisticaDiaria = ""; 
   }
 
   const hoy = new Date();
@@ -131,7 +132,7 @@ async function publicarTasasBCV() {
     `💵 *Dólar (USD):* ${dolarValor.toFixed(2)} VES\n` +
     `💶 *Euro (EUR):* ${euroValor.toFixed(2)} VES\n\n` +
     `${textoEstadisticaDiaria}` +
-    `${textoReporteEspecial}\n` +
+    `${textoReporteEspecial}` +
     `_📈 Mantente al día con las finanzas descargando Rinde+._`;
 
   const { state, saveCreds } = await useMultiFileAuthState('auth_session');
