@@ -12,12 +12,13 @@ app.get('/', (req, res) => {
   res.send('🤖 Bot de Tasas BCV Rinde+ con Estadísticas está activo en la nube.');
 });
 
+// Ruta de prueba que fuerza la ejecución ignorando el filtro de fin de semana
 app.get('/probar', async (req, res) => {
   try {
-    await publicarTasasBCV();
-    res.send('✅ ¡Proceso verificado con éxito!');
+    await publicarTasasBCV(true); 
+    res.send('✅ ¡Prueba ejecutada y publicada con éxito en el canal de WhatsApp!');
   } catch (error) {
-    res.status(500).send('❌ Error al ejecutar el reporte: ' + error.message);
+    res.status(500).send('❌ Error al ejecutar la prueba: ' + error.message);
   }
 });
 
@@ -40,13 +41,28 @@ function guardarHistorial(datos) {
   fs.writeFileSync(HISTORIAL_FILE, JSON.stringify(datos, null, 2));
 }
 
-async function publicarTasasBCV() {
+// Función para formatear la fecha estrictamente al estándar venezolano: DD/MM/YYYY
+function formatearFechaVenezolana(fechaStr) {
+  if (fechaStr && fechaStr.includes('-')) {
+    let partes = fechaStr.split('T')[0].split('-');
+    if (partes.length === 3) {
+      return `${partes[2]}/${partes[1]}/${partes[0]}`;
+    }
+  }
+  const hoy = new Date();
+  const d = String(hoy.getDate()).padStart(2, '0');
+  const m = String(hoy.getMonth() + 1).padStart(2, '0');
+  const y = hoy.getFullYear();
+  return `${d}/${m}/${y}`;
+}
+
+async function publicarTasasBCV(esForzado = false) {
   const hoy = new Date();
   const diaSemana = hoy.getDay(); // 0 = Domingo, 1 = Lunes, ..., 5 = Viernes, 6 = Sábado
 
-  // FILTRO DE FIN DE SEMANA: Si es sábado (6) o domingo (0), no hace nada y se detiene
-  if (diaSemana === 0 || diaSemana === 6) {
-    console.log('[Análisis] Hoy es fin de semana (Sábado/Domingo). No se publicarán tasas.');
+  // Si es fin de semana y NO es una prueba manual forzada, se detiene
+  if (!esForzado && (diaSemana === 0 || diaSemana === 6)) {
+    console.log('[Análisis] Hoy es fin de semana (Sábado/Domingo). No se publicarán tasas automáticamente.');
     return;
   }
 
@@ -59,13 +75,13 @@ async function publicarTasasBCV() {
 
   let dolarValor = 0;
   let euroValor = 0;
-  let fechaOficial = hoy.toLocaleDateString();
+  let fechaCruda = "";
 
   if (resDolar && resDolar.ok) {
     const data = await resDolar.json();
     dolarValor = parseFloat(data.promedio || data.valor || data.precio || 0);
     if (data.fechaActualizacion) {
-      fechaOficial = data.fechaActualizacion.split('T')[0];
+      fechaCruda = data.fechaActualizacion;
     }
   }
 
@@ -77,6 +93,9 @@ async function publicarTasasBCV() {
   if (dolarValor === 0) {
     throw new Error("No se pudo obtener la tasa oficial del dólar.");
   }
+
+  // Convertir al formato de fecha día/mes/año
+  let fechaOficial = formatearFechaVenezolana(fechaCruda);
 
   let historial = obtenerHistorial();
   let variacionBs = 0;
@@ -159,7 +178,7 @@ async function publicarTasasBCV() {
         const channelJid = meta.id;
 
         await sock.sendMessage(channelJid, { text: mensaje });
-        console.log('[Análisis] ¡Reporte estadístico publicado con éxito en el canal!');
+        console.log('[Análisis] ¡Reporte de prueba publicado con éxito en el canal!');
       } catch (err) {
         console.error('Error al enviar al canal:', err);
       }
