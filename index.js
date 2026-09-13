@@ -77,11 +77,11 @@ async function publicarTasasBCV(esForzado = false) {
   if (res && res.ok) {
     const data = await res.json();
     if (data && data.current) {
-      dolarValor = parseFloat(data.current.usd || 0);
-      euroValor = parseFloat(data.current.eur || 0);
-      yuanValor = parseFloat(data.current.cny || 0);
-      liraValor = parseFloat(data.current.try || 0);
-      rubloValor = parseFloat(data.current.rub || 0);
+      dolarValor = parseFloat(data.current.usd || data.current.USD || 0);
+      euroValor = parseFloat(data.current.eur || data.current.EUR || 0);
+      yuanValor = parseFloat(data.current.cny || data.current.CNY || data.current.yuan || 0);
+      liraValor = parseFloat(data.current.try || data.current.TRY || data.current.lira || 0);
+      rubloValor = parseFloat(data.current.rub || data.current.RUB || data.current.rublo || 0);
       if (data.current.date) {
         fechaCruda = data.current.date;
       }
@@ -106,7 +106,7 @@ async function publicarTasasBCV(esForzado = false) {
     let signo = variacionBs >= 0 ? "+" : "";
     textoEstadisticaDiaria = 
       `📈 *Variación Diaria (USD):*\n` +
-      `• Cambio: ${signo}${variacionBs.toFixed(2)} VES\n` +
+      `• Cambio: ${signo}${variacionBs.toFixed(2)} Bs\n` +
       `• Porcentaje: ${signo}${variacionPct.toFixed(2)}%\n\n`;
   } else {
     textoEstadisticaDiaria = ""; 
@@ -127,7 +127,7 @@ async function publicarTasasBCV(esForzado = false) {
     
     textoReporteEspecial += 
       `\n📅 *Resumen Semanal (Cierre de Semana):*\n` +
-      `• Comportamiento Lunes a Viernes: ${signoSemana}${varSemanalBs.toFixed(2)} VES (${signoSemana}${varSemanalPct.toFixed(2)}%)\n`;
+      `• Comportamiento Lunes a Viernes: ${signoSemana}${varSemanalBs.toFixed(2)} Bs (${signoSemana}${varSemanalPct.toFixed(2)}%)\n`;
   }
 
   if (esUltimoDiaMes && historial && historial.inicioMesDolar) {
@@ -137,7 +137,7 @@ async function publicarTasasBCV(esForzado = false) {
     
     textoReporteEspecial += 
       `\n🗓️ *Balance Mensual (Cierre de Mes):*\n` +
-      `• Variación total del mes: ${signoMes}${varMensualBs.toFixed(2)} VES (${signoMes}${varMensualPct.toFixed(2)}%)\n`;
+      `• Variación total del mes: ${signoMes}${varMensualBs.toFixed(2)} Bs (${signoMes}${varMensualPct.toFixed(2)}%)\n`;
   }
 
   let nuevoHistorial = {
@@ -149,15 +149,14 @@ async function publicarTasasBCV(esForzado = false) {
   };
   guardarHistorial(nuevoHistorial);
 
-  // Construcción del mensaje con todas las divisas oficiales del BCV
   const mensaje = 
     `📊 *Tasas Oficiales BCV* | *Rinde+*\n` +
     `🗓️ Fecha: ${fechaOficial}\n\n` +
-    `💵 *Dólar (USD):* ${dolarValor.toFixed(2)} VES\n` +
-    `💶 *Euro (EUR):* ${euroValor.toFixed(2)} VES\n` +
-    `🇨🇳 *Yuan (CNY):* ${yuanValor.toFixed(4)} VES\n` +
-    `🇹🇷 *Lira Turca (TRY):* ${liraValor.toFixed(4)} VES\n` +
-    `🇷🇺 *Rublo (RUB):* ${rubloValor.toFixed(4)} VES\n\n` +
+    `💵 *Dólar (USD):* ${dolarValor.toFixed(2)} Bs\n` +
+    `💶 *Euro (EUR):* ${euroValor.toFixed(2)} Bs\n` +
+    `🇨🇳 *Yuan (CNY):* ${yuanValor.toFixed(4)} Bs\n` +
+    `🇹🇷 *Lira Turca (TRY):* ${liraValor.toFixed(4)} Bs\n` +
+    `🇷🇺 *Rublo (RUB):* ${rubloValor.toFixed(4)} Bs\n\n` +
     `${textoEstadisticaDiaria}` +
     `${textoReporteEspecial}` +
     `_📈 Mantente al día con las finanzas descargando Rinde+._`;
@@ -179,7 +178,7 @@ async function publicarTasasBCV(esForzado = false) {
         const channelJid = meta.id;
 
         await sock.sendMessage(channelJid, { text: mensaje });
-        console.log('[Análisis] ¡Reporte completo de divisas publicado con éxito!');
+        console.log('[Análisis] ¡Reporte completo con Bs publicado con éxito!');
       } catch (err) {
         console.error('Error al enviar al canal:', err);
       }
