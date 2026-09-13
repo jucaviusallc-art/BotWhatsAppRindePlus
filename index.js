@@ -15,7 +15,7 @@ app.get('/', (req, res) => {
 app.get('/probar', async (req, res) => {
   try {
     await publicarTasasBCV();
-    res.send('✅ ¡Reporte estadístico ejecutado y publicado con éxito en WhatsApp!');
+    res.send('✅ ¡Proceso verificado con éxito!');
   } catch (error) {
     res.status(500).send('❌ Error al ejecutar el reporte: ' + error.message);
   }
@@ -41,6 +41,15 @@ function guardarHistorial(datos) {
 }
 
 async function publicarTasasBCV() {
+  const hoy = new Date();
+  const diaSemana = hoy.getDay(); // 0 = Domingo, 1 = Lunes, ..., 5 = Viernes, 6 = Sábado
+
+  // FILTRO DE FIN DE SEMANA: Si es sábado (6) o domingo (0), no hace nada y se detiene
+  if (diaSemana === 0 || diaSemana === 6) {
+    console.log('[Análisis] Hoy es fin de semana (Sábado/Domingo). No se publicarán tasas.');
+    return;
+  }
+
   console.log('\n[Análisis] Consultando tasas oficiales...');
   
   const [resDolar, resEuro] = await Promise.all([
@@ -50,7 +59,7 @@ async function publicarTasasBCV() {
 
   let dolarValor = 0;
   let euroValor = 0;
-  let fechaOficial = new Date().toLocaleDateString();
+  let fechaOficial = hoy.toLocaleDateString();
 
   if (resDolar && resDolar.ok) {
     const data = await resDolar.json();
@@ -84,12 +93,10 @@ async function publicarTasasBCV() {
       `• Cambio: ${signo}${variacionBs.toFixed(2)} VES\n` +
       `• Porcentaje: ${signo}${variacionPct.toFixed(2)}%\n\n`;
   } else {
-    // Si no hay historial previo, se omite por completo el texto de variación
     textoEstadisticaDiaria = ""; 
   }
 
-  const hoy = new Date();
-  const esViernes = hoy.getDay() === 5;
+  const esViernes = diaSemana === 5;
   
   const manana = new Date(hoy);
   manana.setDate(hoy.getDate() + 1);
