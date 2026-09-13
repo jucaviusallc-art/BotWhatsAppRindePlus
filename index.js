@@ -63,20 +63,25 @@ async function publicarTasasBCV(esForzado = false) {
     return;
   }
 
-  console.log('\n[Análisis] Consultando tasas oficiales del BCV...');
+  console.log('\n[Análisis] Consultando tasas oficiales completas del BCV...');
   
   const res = await fetch("https://rates.dolarvzla.com/bcv/current.json").catch(() => null);
 
   let dolarValor = 0;
   let euroValor = 0;
+  let yuanValor = 0;
+  let liraValor = 0;
+  let rubloValor = 0;
   let fechaCruda = "";
 
   if (res && res.ok) {
     const data = await res.json();
-    // Leemos correctamente dentro del objeto "current" que entrega esta API
     if (data && data.current) {
       dolarValor = parseFloat(data.current.usd || 0);
       euroValor = parseFloat(data.current.eur || 0);
+      yuanValor = parseFloat(data.current.cny || 0);
+      liraValor = parseFloat(data.current.try || 0);
+      rubloValor = parseFloat(data.current.rub || 0);
       if (data.current.date) {
         fechaCruda = data.current.date;
       }
@@ -144,11 +149,15 @@ async function publicarTasasBCV(esForzado = false) {
   };
   guardarHistorial(nuevoHistorial);
 
+  // Construcción del mensaje con todas las divisas oficiales del BCV
   const mensaje = 
     `📊 *Tasas Oficiales BCV* | *Rinde+*\n` +
     `🗓️ Fecha: ${fechaOficial}\n\n` +
     `💵 *Dólar (USD):* ${dolarValor.toFixed(2)} VES\n` +
-    `💶 *Euro (EUR):* ${euroValor.toFixed(2)} VES\n\n` +
+    `💶 *Euro (EUR):* ${euroValor.toFixed(2)} VES\n` +
+    `🇨🇳 *Yuan (CNY):* ${yuanValor.toFixed(4)} VES\n` +
+    `🇹🇷 *Lira Turca (TRY):* ${liraValor.toFixed(4)} VES\n` +
+    `🇷🇺 *Rublo (RUB):* ${rubloValor.toFixed(4)} VES\n\n` +
     `${textoEstadisticaDiaria}` +
     `${textoReporteEspecial}` +
     `_📈 Mantente al día con las finanzas descargando Rinde+._`;
@@ -170,7 +179,7 @@ async function publicarTasasBCV(esForzado = false) {
         const channelJid = meta.id;
 
         await sock.sendMessage(channelJid, { text: mensaje });
-        console.log('[Análisis] ¡Reporte con tasa oficial actualizado publicado con éxito!');
+        console.log('[Análisis] ¡Reporte completo de divisas publicado con éxito!');
       } catch (err) {
         console.error('Error al enviar al canal:', err);
       }
