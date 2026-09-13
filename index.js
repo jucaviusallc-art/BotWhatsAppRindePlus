@@ -47,7 +47,6 @@ function formatearFechaVenezolana(fechaStr) {
       return `${partes[2]}/${partes[1]}/${partes[0]}`;
     }
   }
-  // Obtener fecha actual en Venezuela
   const fechaVET = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Caracas" }));
   const d = String(fechaVET.getDate()).padStart(2, '0');
   const m = String(fechaVET.getMonth() + 1).padStart(2, '0');
@@ -56,7 +55,6 @@ function formatearFechaVenezolana(fechaStr) {
 }
 
 async function publicarTasasBCV(esForzado = false) {
-  // Ajustar la fecha y hora exactamente a la zona horaria de Venezuela (America/Caracas)
   const ahoraVET = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Caracas" }));
   const diaSemana = ahoraVET.getDay(); // 0 = Domingo, 1 = Lunes, ..., 5 = Viernes, 6 = Sábado
 
@@ -65,15 +63,12 @@ async function publicarTasasBCV(esForzado = false) {
     return;
   }
 
-  console.log('\n[Análisis] Consultando tasas oficiales completas del BCV...');
+  console.log('\n[Análisis] Consultando tasas oficiales del BCV...');
   
   const res = await fetch("https://rates.dolarvzla.com/bcv/current.json").catch(() => null);
 
   let dolarValor = 0;
   let euroValor = 0;
-  let yuanValor = 0;
-  let liraValor = 0;
-  let rubloValor = 0;
   let fechaCruda = "";
 
   if (res && res.ok) {
@@ -82,11 +77,6 @@ async function publicarTasasBCV(esForzado = false) {
     if (data && data.current) {
       dolarValor = parseFloat(data.current.usd || data.current.USD || 0);
       euroValor = parseFloat(data.current.eur || data.current.EUR || 0);
-      
-      // Búsqueda ampliada para monedas secundarias con sintaxis segura
-      yuanValor = parseFloat(data.current.cny || data.current.CNY || data.current.yuan || data.current.CNY_rate || data.current.china || 0);
-      liraValor = parseFloat(data.current['try'] || data.current.TRY || data.current.lira || data.current.TRY_rate || data.current.turquia || 0);
-      rubloValor = parseFloat(data.current.rub || data.current.RUB || data.current.rublo || data.current.RUB_rate || data.current.rusia || 0);
 
       if (data.current.date) {
         fechaCruda = data.current.date;
@@ -146,28 +136,21 @@ async function publicarTasasBCV(esForzado = false) {
       `• Variación total del mes: ${signoMes}${varMensualBs.toFixed(2)} Bs (${signoMes}${varMensualPct.toFixed(2)}%)\n`;
   }
 
-  // Guardamos el historial completo incluyendo todas las divisas para futuras referencias
   let nuevoHistorial = {
     dolarValor: dolarValor,
     euroValor: euroValor,
-    yuanValor: yuanValor,
-    liraValor: liraValor,
-    rubloValor: rubloValor,
     fecha: fechaOficial,
     inicioSemanaDolar: (esViernes || !historial || !historial.inicioSemanaDolar) ? dolarValor : historial.inicioSemanaDolar,
     inicioMesDolar: (esUltimoDiaMes || !historial || !historial.inicioMesDolar) ? dolarValor : historial.inicioMesDolar
   };
   guardarHistorial(nuevoHistorial);
 
-  // Mensaje con variable corregida (eliminado el error de tipeo)
+  // Mensaje estructurado con las divisas reales disponibles en el endpoint
   const mensaje = 
     `📊 *Tasas Oficiales BCV* | *Rinde+*\n` +
     `🗓️ Fecha: ${fechaOficial}\n\n` +
     `💵 *Dólar (USD):* ${dolarValor.toFixed(2)} Bs\n` +
-    `💶 *Euro (EUR):* ${euroValor.toFixed(2)} Bs\n` +
-    `🇨🇳 *Yuan (CNY):* ${yuanValor.toFixed(4)} Bs\n` +
-    `🇹🇷 *Lira Turca (TRY):* ${liraValor.toFixed(4)} Bs\n` +
-    `🇷🇺 *Rublo (RUB):* ${rubloValor.toFixed(4)} Bs\n\n` +
+    `💶 *Euro (EUR):* ${euroValor.toFixed(2)} Bs\n\n` +
     `${textoEstadisticaDiaria}` +
     `${textoReporteEspecial}` +
     `_📈 Mantente al día con las finanzas descargando Rinde+._`;
@@ -189,7 +172,7 @@ async function publicarTasasBCV(esForzado = false) {
         const channelJid = meta.id;
 
         await sock.sendMessage(channelJid, { text: mensaje });
-        console.log('[Análisis] ¡Reporte completo publicado con éxito!');
+        console.log('[Análisis] ¡Reporte oficial publicado con éxito en el canal!');
       } catch (err) {
         console.error('Error al enviar al canal:', err);
       }
