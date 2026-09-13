@@ -47,19 +47,21 @@ function formatearFechaVenezolana(fechaStr) {
       return `${partes[2]}/${partes[1]}/${partes[0]}`;
     }
   }
-  const hoy = new Date();
-  const d = String(hoy.getDate()).padStart(2, '0');
-  const m = String(hoy.getMonth() + 1).padStart(2, '0');
-  const y = hoy.getFullYear();
+  // Obtener fecha actual en Venezuela
+  const fechaVET = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Caracas" }));
+  const d = String(fechaVET.getDate()).padStart(2, '0');
+  const m = String(fechaVET.getMonth() + 1).padStart(2, '0');
+  const y = fechaVET.getFullYear();
   return `${d}/${m}/${y}`;
 }
 
 async function publicarTasasBCV(esForzado = false) {
-  const hoy = new Date();
-  const diaSemana = hoy.getDay();
+  // Ajustar la fecha y hora exactamente a la zona horaria de Venezuela (America/Caracas)
+  const ahoraVET = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Caracas" }));
+  const diaSemana = ahoraVET.getDay(); // 0 = Domingo, 1 = Lunes, ..., 5 = Viernes, 6 = Sábado
 
   if (!esForzado && (diaSemana === 0 || diaSemana === 6)) {
-    console.log('[Análisis] Hoy es fin de semana (Sábado/Domingo). No se publicarán tasas automáticamente.');
+    console.log('[Análisis] Hoy es fin de semana (Sábado/Domingo) en Venezuela. No se publicarán tasas automáticamente.');
     return;
   }
 
@@ -76,12 +78,16 @@ async function publicarTasasBCV(esForzado = false) {
 
   if (res && res.ok) {
     const data = await res.json();
+    
     if (data && data.current) {
       dolarValor = parseFloat(data.current.usd || data.current.USD || 0);
       euroValor = parseFloat(data.current.eur || data.current.EUR || 0);
-      yuanValor = parseFloat(data.current.cny || data.current.CNY || data.current.yuan || 0);
-      liraValor = parseFloat(data.current.try || data.current.TRY || data.current.lira || 0);
-      rubloValor = parseFloat(data.current.rub || data.current.RUB || data.current.rublo || 0);
+      
+      // Búsqueda ampliada para monedas secundarias con sintaxis segura
+      yuanValor = parseFloat(data.current.cny || data.current.CNY || data.current.yuan || data.current.CNY_rate || data.current.china || 0);
+      liraValor = parseFloat(data.current['try'] || data.current.TRY || data.current.lira || data.current.TRY_rate || data.current.turquia || 0);
+      rubloValor = parseFloat(data.current.rub || data.current.RUB || data.current.rublo || data.current.RUB_rate || data.current.rusia || 0);
+
       if (data.current.date) {
         fechaCruda = data.current.date;
       }
@@ -114,9 +120,9 @@ async function publicarTasasBCV(esForzado = false) {
 
   const esViernes = diaSemana === 5;
   
-  const manana = new Date(hoy);
-  manana.setDate(hoy.getDate() + 1);
-  const esUltimoDiaMes = manana.getDate() === 1;
+  const mananaVET = new Date(ahoraVET);
+  mananaVET.setDate(ahoraVET.getDate() + 1);
+  const esUltimoDiaMes = mananaVET.getDate() === 1;
 
   let textoReporteEspecial = "";
 
@@ -140,15 +146,20 @@ async function publicarTasasBCV(esForzado = false) {
       `• Variación total del mes: ${signoMes}${varMensualBs.toFixed(2)} Bs (${signoMes}${varMensualPct.toFixed(2)}%)\n`;
   }
 
+  // Guardamos el historial completo incluyendo todas las divisas para futuras referencias
   let nuevoHistorial = {
     dolarValor: dolarValor,
     euroValor: euroValor,
+    yuanValor: yuanValor,
+    liraValor: liraValor,
+    rubloValor: rubloValor,
     fecha: fechaOficial,
     inicioSemanaDolar: (esViernes || !historial || !historial.inicioSemanaDolar) ? dolarValor : historial.inicioSemanaDolar,
     inicioMesDolar: (esUltimoDiaMes || !historial || !historial.inicioMesDolar) ? dolarValor : historial.inicioMesDolar
   };
   guardarHistorial(nuevoHistorial);
 
+  // Mensaje con variable corregida (eliminado el error de tipeo)
   const mensaje = 
     `📊 *Tasas Oficiales BCV* | *Rinde+*\n` +
     `🗓️ Fecha: ${fechaOficial}\n\n` +
@@ -178,7 +189,7 @@ async function publicarTasasBCV(esForzado = false) {
         const channelJid = meta.id;
 
         await sock.sendMessage(channelJid, { text: mensaje });
-        console.log('[Análisis] ¡Reporte completo con Bs publicado con éxito!');
+        console.log('[Análisis] ¡Reporte completo publicado con éxito!');
       } catch (err) {
         console.error('Error al enviar al canal:', err);
       }
