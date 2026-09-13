@@ -12,7 +12,6 @@ app.get('/', (req, res) => {
   res.send('🤖 Bot de Tasas BCV Rinde+ con Estadísticas está activo en la nube.');
 });
 
-// Ruta de prueba que fuerza la ejecución ignorando el filtro de fin de semana
 app.get('/probar', async (req, res) => {
   try {
     await publicarTasasBCV(true); 
@@ -41,7 +40,6 @@ function guardarHistorial(datos) {
   fs.writeFileSync(HISTORIAL_FILE, JSON.stringify(datos, null, 2));
 }
 
-// Función para formatear la fecha estrictamente al estándar venezolano: DD/MM/YYYY
 function formatearFechaVenezolana(fechaStr) {
   if (fechaStr && fechaStr.includes('-')) {
     let partes = fechaStr.split('T')[0].split('-');
@@ -58,43 +56,35 @@ function formatearFechaVenezolana(fechaStr) {
 
 async function publicarTasasBCV(esForzado = false) {
   const hoy = new Date();
-  const diaSemana = hoy.getDay(); // 0 = Domingo, 1 = Lunes, ..., 5 = Viernes, 6 = Sábado
+  const diaSemana = hoy.getDay();
 
-  // Si es fin de semana y NO es una prueba manual forzada, se detiene
   if (!esForzado && (diaSemana === 0 || diaSemana === 6)) {
     console.log('[Análisis] Hoy es fin de semana (Sábado/Domingo). No se publicarán tasas automáticamente.');
     return;
   }
 
-  console.log('\n[Análisis] Consultando tasas oficiales...');
+  console.log('\n[Análisis] Consultando tasas oficiales del BCV...');
   
-  const [resDolar, resEuro] = await Promise.all([
-    fetch("https://ve.dolarapi.com/v1/dolares/oficial").catch(() => null),
-    fetch("https://ve.dolarapi.com/v1/euros/oficial").catch(() => null)
-  ]);
+  // Usamos el endpoint oficial de monitoreo BCV que incluye la Fecha Valor correcta publicada por el banco
+  const res = await fetch("https://rates.dolarvzla.com/bcv/current.json").catch(() => null);
 
   let dolarValor = 0;
   let euroValor = 0;
   let fechaCruda = "";
 
-  if (resDolar && resDolar.ok) {
-    const data = await resDolar.json();
-    dolarValor = parseFloat(data.promedio || data.valor || data.precio || 0);
-    if (data.fechaActualizacion) {
-      fechaCruda = data.fechaActualizacion;
+  if (res && res.ok) {
+    const data = await res.json();
+    dolarValor = parseFloat(data.usd || 0);
+    euroValor = parseFloat(data.eur || 0);
+    if (data.date) {
+      fechaCruda = data.date;
     }
   }
 
-  if (resEuro && resEuro.ok) {
-    const data = await resEuro.json();
-    euroValor = parseFloat(data.promedio || data.valor || data.precio || 0);
-  }
-
   if (dolarValor === 0) {
-    throw new Error("No se pudo obtener la tasa oficial del dólar.");
+    throw new Error("No se pudo obtener la tasa oficial del dólar desde la fuente.");
   }
 
-  // Convertir al formato de fecha día/mes/año
   let fechaOficial = formatearFechaVenezolana(fechaCruda);
 
   let historial = obtenerHistorial();
@@ -178,7 +168,7 @@ async function publicarTasasBCV(esForzado = false) {
         const channelJid = meta.id;
 
         await sock.sendMessage(channelJid, { text: mensaje });
-        console.log('[Análisis] ¡Reporte de prueba publicado con éxito en el canal!');
+        console.log('[Análisis] ¡Reporte con tasa oficial actualizado publicado con éxito!');
       } catch (err) {
         console.error('Error al enviar al canal:', err);
       }
