@@ -65,7 +65,6 @@ async function publicarTasasBCV(esForzado = false) {
 
   console.log('\n[Análisis] Consultando tasas oficiales del BCV...');
   
-  // Usamos el endpoint oficial de monitoreo BCV que incluye la Fecha Valor correcta publicada por el banco
   const res = await fetch("https://rates.dolarvzla.com/bcv/current.json").catch(() => null);
 
   let dolarValor = 0;
@@ -74,10 +73,13 @@ async function publicarTasasBCV(esForzado = false) {
 
   if (res && res.ok) {
     const data = await res.json();
-    dolarValor = parseFloat(data.usd || 0);
-    euroValor = parseFloat(data.eur || 0);
-    if (data.date) {
-      fechaCruda = data.date;
+    // Leemos correctamente dentro del objeto "current" que entrega esta API
+    if (data && data.current) {
+      dolarValor = parseFloat(data.current.usd || 0);
+      euroValor = parseFloat(data.current.eur || 0);
+      if (data.current.date) {
+        fechaCruda = data.current.date;
+      }
     }
   }
 
