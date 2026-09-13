@@ -145,7 +145,7 @@ async function publicarTasasBCV(esForzado = false) {
   };
   guardarHistorial(nuevoHistorial);
 
-  // Mensaje estructurado con las divisas reales disponibles en el endpoint
+  // Mensaje con la frase final personalizada y el enlace de la Play Store
   const mensaje = 
     `📊 *Tasas Oficiales BCV* | *Rinde+*\n` +
     `🗓️ Fecha: ${fechaOficial}\n\n` +
@@ -153,7 +153,7 @@ async function publicarTasasBCV(esForzado = false) {
     `💶 *Euro (EUR):* ${euroValor.toFixed(2)} Bs\n\n` +
     `${textoEstadisticaDiaria}` +
     `${textoReporteEspecial}` +
-    `_📈 Mantente al día con las finanzas descargando Rinde+._`;
+    `_📈 Mantente al día con tus finanzas descargando Rinde+ en Google Play Store:_ https://play.google.com/store/apps/details?id=com.jucavi.rindemas`;
 
   const { state, saveCreds } = await useMultiFileAuthState('auth_session');
   const sock = makeWASocket({
